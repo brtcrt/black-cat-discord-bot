@@ -1,0 +1,154 @@
+{
+    "embeds": [
+        {
+            "title": "Simple Commands",
+            "fields": [
+                {
+                    "name": "bot?",
+                    "value": "This message you retard.",
+                    "inline": false
+                },
+                {
+                    "name": "prefix",
+                    "value": "Shows current prefix for the server. Will changes the bot's prefix if given arguments.",
+                    "inline": false
+                },
+                {
+                    "name": "level",
+                    "value": "Shows level and xp info.",
+                    "inline": false
+                },
+                {
+                    "name": "clear x",
+                    "value": "Deletes x amount of messages.",
+                    "inline": false
+                },
+                {
+                    "name": "votekick @user",
+                    "value": "Opens a kicking poll.",
+                    "inline": false
+                },
+                {
+                    "name": "todo",
+                    "value": "A small todo list.",
+                    "inline": false
+                },
+                {
+                    "name": "setreminder",
+                    "value": "Sets a reminder for a specific date.",
+                    "inline": false
+                },
+                {
+                    "name": "changename @user",
+                    "value": "Changes user's nickname.",
+                    "inline": false
+                }
+            ]
+        },
+        {
+            "title": "Music Commands",
+            "fields": [
+                {
+                    "name": "play",
+                    "value": "Play a track from a YouTube link or search term.",
+                    "inline": false
+                },
+                {
+                    "name": "pause",
+                    "value": "Pauses the track.",
+                    "inline": false
+                },
+                {
+                    "name": "queue",
+                    "value": "Shows the current queue.",
+                    "inline": false
+                },
+                {
+                    "name": "loop",
+                    "value": "Loops the track that is currently playing.",
+                    "inline": false
+                },
+                {
+                    "name": "skip",
+                    "value": "Skips to the next track in queue.",
+                    "inline": false
+                },
+                {
+                    "name": "die",
+                    "value": "Bot leaves the voice channel and clears the queue.",
+                    "inline": false
+                },
+                {
+                    "name": "lyrics",
+                    "value": "Searches for lyrics for the current track.",
+                    "inline": false
+                }
+            ]
+        },
+        {
+            "title": "Photos/GIFs",
+            "fields": [
+                {
+                    "name": "gif",
+                    "value": "Sends a random gif.",
+                    "inline": false
+                },
+                {
+                    "name": "gifsearch",
+                    "value": "Search for a gif on Tenor. (optional: number of results the bot will pick from eg. gifsearch bruh 50 will get 50 results and pick 1 random.",
+                    "inline": false
+                },
+                {
+                    "name": "cat",
+                    "value": "Sends a random cat photo.",
+                    "inline": false
+                },
+                {
+                    "name": "dog",
+                    "value": "Sends a random dog photo.",
+                    "inline": false
+                },
+                {
+                    "name": "bird",
+                    "value": "Sends a random bird photo.",
+                    "inline": false
+                },
+                {
+                    "name": "randompic",
+                    "value": "Sends a random photo.",
+                    "inline": false
+                }
+            ]
+        },
+        {
+            "title": "Minigames",
+            "fields": [
+                {
+                    "name": "russianroulette / rr",
+                    "value": "Play a game of russian roulette. If you die you die.*(get kicked from server)*",
+                    "inline": false
+                },
+                {
+                    "name": "rock, paper or scissors",
+                    "value": "Play a game of rock,paper,scissors.",
+                    "inline": false
+                }
+            ]
+        },
+        {
+            "title": "Misc Commands",
+            "fields": [
+                {
+                    "name": "weather",
+                    "value": "Get weather info abot a place.",
+                    "inline": false
+                },
+                {
+                    "name": "ping",
+                    "value": "Get a close approximation of your ping.",
+                    "inline": false
+                }
+            ]
+        }
+    ]
+}

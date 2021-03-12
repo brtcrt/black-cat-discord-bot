@@ -25,9 +25,7 @@ const cooldowns = new Discord.Collection();
 // variables
 
 let curprefix = "=";
-let servers = {
-
-};
+let servers = {};
 let someRandomThing;
 let searchResults;
 let someInfo;
@@ -48,7 +46,7 @@ const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
 	client.commands.set(command.name, command);
-}
+};
 
 // getting commands end
 
@@ -82,7 +80,7 @@ process.on('unhandledRejection', error => {
 
 client.on('ready', () => {
 	console.log('Ready!');
-    client.user.setActivity("testing shit...");
+    client.user.setActivity("=bot?");
 });
 
 client.on('message', async message => {
@@ -134,7 +132,6 @@ client.on('message', async message => {
         .setColor("#d89ada")
         .addField(`**${message.author.username}** just leveled up to ${curLVL + 1}`, ":)", true)
         .setThumbnail(message.author.displayAvatarURL());
-
         message.channel.send(lvlupMSG);
     };
 
@@ -164,7 +161,7 @@ client.on('message', async message => {
 
         if (now < expirationTime) {
             return;
-        }
+        };
     };
 
     timestamps.set(message.author.id, now);
@@ -202,125 +199,125 @@ var timerID = setInterval(function(){
 
 async function getVideoDetails (video){
     function learnRegExp(s) {    
-    var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-    return regexp.test(s);    
-}
-validornot = learnRegExp(video);
-if(!validornot){
-    const searchResults = await ytsr(video);
-    return searchResults;
-} else{
-    const someInfo = await ytdl.getBasicInfo(video);
-    return someInfo.videoDetails;
-};
+        var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+        return regexp.test(s);    
+    };
+    validornot = learnRegExp(video);
+    if(!validornot){
+        const searchResults = await ytsr(video);
+        return searchResults;
+    } else{
+        const someInfo = await ytdl.getBasicInfo(video);
+        return someInfo.videoDetails;
+    };
 };
 
 async function findLyrics(message, loopingTrack){
-let songName = loopingTrack.title;
-songName = songName.replace(/ *\([^)]*\) */g, '');
-songName = songName.replace(
-  /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g,
-  ''
-);
-console.log(songName);
-let searchUrl = (`https://api.genius.com/search?q=${encodeURI(songName)}`);
-const headers = {
-    Authorization: `Bearer ${geniustoken}`
-};
-try {
-    const body = await nodefetch(searchUrl, {headers});
-    const result = await body.json();
-    if(!result) return SendErrorMessage(message);
-    const songPath = result.response.hits[0].result.api_path;  
-    if (!songPath) return SendErrorMessage(message, "Couldn't find lyrics for this.");
-    const LyricsPath = (`https://api.genius.com${songPath}`);
-    console.log(LyricsPath);
-    const body2 = await nodefetch(LyricsPath, { headers });
-    const result2 = await body2.json();
-    if(!result2.response.song.url) return SendErrorMessage(message);
-    const pageUrl = result2.response.song.url;
-    const response3 = await nodefetch(pageUrl);
-    lyricsURL = pageUrl;
-    const text = await response3.text();
-    const $ = cheerio.load(text);
-    let lyrics = $('.lyrics')
-      .text()
-      .trim();
-    if (!lyrics) {
-        $('.Lyrics__Container-sc-1ynbvzw-2')
-            .find('br')
-            .replaceWith('\n');
-        lyrics = $('.Lyrics__Container-sc-1ynbvzw-2').text();
-        if (!lyrics) { 
-            return SendErrorMessage(message);
+    let songName = loopingTrack.title;
+    songName = songName.replace(/ *\([^)]*\) */g, '');
+    songName = songName.replace(
+      /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g,
+      ''
+    );
+    console.log(songName);
+    let searchUrl = (`https://api.genius.com/search?q=${encodeURI(songName)}`);
+    const headers = {
+        Authorization: `Bearer ${geniustoken}`
+    };
+    try {
+        const body = await nodefetch(searchUrl, {headers});
+        const result = await body.json();
+        if(!result) return SendErrorMessage(message);
+        const songPath = result.response.hits[0].result.api_path;  
+        if (!songPath) return SendErrorMessage(message, "Couldn't find lyrics for this.");
+        const LyricsPath = (`https://api.genius.com${songPath}`);
+        console.log(LyricsPath);
+        const body2 = await nodefetch(LyricsPath, { headers });
+        const result2 = await body2.json();
+        if(!result2.response.song.url) return SendErrorMessage(message);
+        const pageUrl = result2.response.song.url;
+        const response3 = await nodefetch(pageUrl);
+        lyricsURL = pageUrl;
+        const text = await response3.text();
+        const $ = cheerio.load(text);
+        let lyrics = $('.lyrics')
+          .text()
+          .trim();
+        if (!lyrics) {
+            $('.Lyrics__Container-sc-1ynbvzw-2')
+                .find('br')
+                .replaceWith('\n');
+            lyrics = $('.Lyrics__Container-sc-1ynbvzw-2').text();
+            if (!lyrics) { 
+                return SendErrorMessage(message);
+            } else {
+                return lyrics.replace(/(\[.+\])/g, '');
+            }
         } else {
             return lyrics.replace(/(\[.+\])/g, '');
         }
-    } else {
-        return lyrics.replace(/(\[.+\])/g, '');
-    }
-} catch (e) {
-    console.log(e);
-};
+    } catch (e) {
+        console.log(e);
+    };
 };
 
 
 async function playNewTrack(message, loopingTrack){
-let startedMessage;
-let nextTrack;
-let nextTrackURL;
-if(!message.guild.me.hasPermission("DELETE_MESSAGES")){
+    let startedMessage;
+    let nextTrack;
+    let nextTrackURL;
+    if(!message.guild.me.hasPermission("DELETE_MESSAGES")){
 
-} else lastSentPlaying.delete();
-if(!servers[message.guild.id].looping){
-    servers[message.guild.id].dispatch.end();
-    nextTrack = servers[message.guild.id].queue.shift();
-    console.log(nextTrack);
-    nextTrackURL = nextTrack.url;
-};
+    } else lastSentPlaying.delete();
+    if(!servers[message.guild.id].looping){
+        servers[message.guild.id].dispatch.end();
+        nextTrack = servers[message.guild.id].queue.shift();
+        console.log(nextTrack);
+        nextTrackURL = nextTrack.url;
+    };
 
-if(servers[message.guild.id].looping){
-    console.log(loopingTrack);
-    nextTrack = loopingTrack;
-    nextTrackURL = loopingTrack.url;
-};
-const connection = servers[message.guild.id].connection;
-connection.voice.setSelfDeaf(true);
-servers[message.guild.id].loopinginfo.title = nextTrack.title;
-servers[message.guild.id].loopinginfo.url = nextTrackURL;
-servers[message.guild.id].loopinginfo.channelname = nextTrack.channelname;
-servers[message.guild.id].loopinginfo.channelurl = nextTrack.channelurl;
-servers[message.guild.id].loopinginfo.thumbnail = nextTrack.thumbnail;
-const dispatcher = connection.play(await ytdl(nextTrackURL),{ type: 'opus', highWaterMark: 1<<23});
-servers[message.guild.id].dispatch = dispatcher;
-servers[message.guild.id].playing = true;
-startedMessage = new Discord.MessageEmbed()
-    .setTitle("Now Playing:")
-    .setColor("RANDOM")
-    .setDescription(`[${nextTrack.title.toString()}](${nextTrackURL})  -  [${nextTrack.channelname.toString()}](${nextTrack.channelurl})`)
-    .setThumbnail(nextTrack.thumbnail);
-console.log('Now playing!');
-lastSentPlaying = await message.channel.send(startedMessage);
-let finnishedMessage = new Discord.MessageEmbed()
-.setDescription("Stopped Playing!")
-.setColor("#f01717");
-dispatcher.on('finish', () => {
-    if (servers[message.guild.id].looping) {
-        return playNewTrack(message, nextTrack);
+    if(servers[message.guild.id].looping){
+        console.log(loopingTrack);
+        nextTrack = loopingTrack;
+        nextTrackURL = loopingTrack.url;
     };
-    if(servers[message.guild.id].queue[0] != null){
-        console.log("Playing next track.");
-        return playNewTrack(message);
-    } else {
-        servers[message.guild.id].playing = false;
-        console.log('Finished playing!');
-        message.channel.send(finnishedMessage);
-        dispatcher.destroy();
-        message.guild.me.voice.channel.leave();   
-    };
-    
-});
-dispatcher.on('error', console.error);
+    const connection = servers[message.guild.id].connection;
+    connection.voice.setSelfDeaf(true);
+    servers[message.guild.id].loopinginfo.title = nextTrack.title;
+    servers[message.guild.id].loopinginfo.url = nextTrackURL;
+    servers[message.guild.id].loopinginfo.channelname = nextTrack.channelname;
+    servers[message.guild.id].loopinginfo.channelurl = nextTrack.channelurl;
+    servers[message.guild.id].loopinginfo.thumbnail = nextTrack.thumbnail;
+    const dispatcher = connection.play(await ytdl(nextTrackURL),{ type: 'opus', highWaterMark: 1<<23});
+    servers[message.guild.id].dispatch = dispatcher;
+    servers[message.guild.id].playing = true;
+    startedMessage = new Discord.MessageEmbed()
+        .setTitle("Now Playing:")
+        .setColor("RANDOM")
+        .setDescription(`[${nextTrack.title.toString()}](${nextTrackURL})  -  [${nextTrack.channelname.toString()}](${nextTrack.channelurl})`)
+        .setThumbnail(nextTrack.thumbnail);
+    console.log('Now playing!');
+    lastSentPlaying = await message.channel.send(startedMessage);
+    let finnishedMessage = new Discord.MessageEmbed()
+    .setDescription("Stopped Playing!")
+    .setColor("#f01717");
+    dispatcher.on('finish', () => {
+        if (servers[message.guild.id].looping) {
+            return playNewTrack(message, nextTrack);
+        };
+        if(servers[message.guild.id].queue[0] != null){
+            console.log("Playing next track.");
+            return playNewTrack(message);
+        } else {
+            servers[message.guild.id].playing = false;
+            console.log('Finished playing!');
+            message.channel.send(finnishedMessage);
+            dispatcher.destroy();
+            message.guild.me.voice.channel.leave();   
+        };
+
+    });
+    dispatcher.on('error', console.error);
 };
 
 

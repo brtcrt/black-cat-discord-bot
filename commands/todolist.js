@@ -40,7 +40,7 @@ module.exports = {
                 let nothinginlist = new Discord.MessageEmbed()
                 .setTitle("Uh oh! Something went wrong!")
                 .setColor("#f01717") 
-                .setDescription("Looks like you don't have anything in your todo list. If you need help, use " + curprefix + "help todo");
+                .setDescription("Looks like you don't have anything in your todo list. If you need help, use " + curprefix + "helptodo");
                 message.channel.send(nothinginlist)
             } else {
                 const randomColor = () => {

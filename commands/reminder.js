@@ -3,6 +3,7 @@
 const Discord = require("discord.js");
 const path = require("path");
 let reminder  = require(path.join(__dirname, "../")+"/database/reminders.json");
+let prefixes = require(path.join(__dirname, "../")+"/database/prefixes.json");
 const fs = require("fs")
 
 // Dependencies & variables end
@@ -29,7 +30,8 @@ module.exports = {
     aliases: ["remindme"],
     async execute(message, args){
         let allreminders = "allreminders";
-        if (!args[0] || !args[1] || !args[2]|| !args[3]) return SendErrorMessage(message);
+        let curprefix = prefixes[message.guild.id].prefix;
+        if (!args[0] || !args[1] || !args[2]|| !args[3]) return SendErrorMessage(message, `Use ${curprefix}helpsetreminder if you need any help.`);
         if (!reminder[allreminders] && !message.author.bot){
             let data = {
                 Date: args[0]+" "+ (parseInt(args[1])-1).toString() + " " + args[2],

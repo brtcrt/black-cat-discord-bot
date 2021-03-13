@@ -6,6 +6,7 @@ const nodefetch = require("node-fetch");
 let reminder = require("./database/reminders.json");
 let newxp = require("./database/exp.json");
 let prefixes = require("./database/prefixes.json");
+let botstats = require("./database/stats.json")
 const Pagination = require("discord-paginationembed");
 const cheerio = require("cheerio");
 const ytdl = require('ytdl-core-discord');
@@ -78,13 +79,28 @@ process.on('unhandledRejection', error => {
 	console.error('Unhandled promise rejection:', error);
 });
 
+client.on("guildCreate", async guild => {
+    let thankMessage = {
+        color: "WHITE",
+        title: `Thank you for adding me to ${guild.name}!`,
+        description: `If you need any help use =bot? If you have any problems, questions, or if you find any bugs, join [${"the support server"}](${"https://discord.gg/jXQvBj4tup"}) !`,
+        thumbnail: {url: guild.iconURL()},
+        footer: {
+            text: "Enjoy!",
+            icon_url: client.user.avatarURL()
+        },
+        timestamp: new Date()
+    };
+    guild.systemChannel.send({embed: thankMessage});
+});
+
+
 client.on('ready', () => {
 	console.log('Ready!');
     client.user.setActivity("=bot?");
 });
 
 client.on('message', async message => {
-
     if(message.guild === null) return;
     if(message.author.bot) return;
     let createdTime = message.createdTimestamp;
@@ -178,6 +194,13 @@ client.on('message', async message => {
 //reminder 
 
 var timerID = setInterval(function(){
+    botstats.guildNumber = client.guilds.cache.size;
+    fs.writeFile("./database/stats.json", JSON.stringify(botstats, null, 4), (err) => {
+        if(err) console.error;
+    });
+    fs.writeFile("../black-cat-website/stats.json", JSON.stringify(botstats, null, 4), (err) => {
+        if(err) console.error;
+    });
     var date= new Date();
     reminderlist = reminder[allreminders];
     for (let i = 0; i < reminderlist.length;  i++){

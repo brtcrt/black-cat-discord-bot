@@ -83,7 +83,7 @@ client.on("guildCreate", async guild => {
     let thankMessage = {
         color: "WHITE",
         title: `Thank you for adding me to ${guild.name}!`,
-        description: `If you need any help use =bot? If you have any problems, questions, or if you find any bugs, join [${"the support server"}](${"https://discord.gg/jXQvBj4tup"}) !`,
+        description: `If you need any help use =bot? If you have any problems, questions, or if you find any bugs, join [${"the support server"}](${"https://discord.gg/jXQvBj4tup"}) ! If you want to learn more visit [${"the webpage"}](${"https://brtcrt.github.io/black-cat-website/index.html"}) !`,
         thumbnail: {url: guild.iconURL()},
         footer: {
             text: "Enjoy!",
@@ -293,7 +293,7 @@ async function playNewTrack(message, loopingTrack){
 
     } else lastSentPlaying.delete();
     if(!servers[message.guild.id].looping){
-        servers[message.guild.id].dispatch.end();
+        //servers[message.guild.id].dispatch.end();
         nextTrack = servers[message.guild.id].queue.shift();
         console.log(nextTrack);
         nextTrackURL = nextTrack.url;
@@ -311,7 +311,7 @@ async function playNewTrack(message, loopingTrack){
     servers[message.guild.id].loopinginfo.channelname = nextTrack.channelname;
     servers[message.guild.id].loopinginfo.channelurl = nextTrack.channelurl;
     servers[message.guild.id].loopinginfo.thumbnail = nextTrack.thumbnail;
-    const dispatcher = connection.play(await ytdl(nextTrackURL),{ type: 'opus', highWaterMark: 1<<23});
+    const dispatcher = connection.play(await ytdl(nextTrackURL, {filter: "audioonly", highWaterMark: 1<<24 }),{ type: 'opus', highWaterMark: 1});
     servers[message.guild.id].dispatch = dispatcher;
     servers[message.guild.id].playing = true;
     startedMessage = new Discord.MessageEmbed()
@@ -532,7 +532,7 @@ client.on("message", async message => {
             const connection = await message.member.voice.channel.join();
             servers[message.guild.id].connection = connection;
             connection.voice.setSelfDeaf(true);
-            const dispatcher = connection.play(await ytdl(searchedURL, {filter: "audioonly", highWaterMark: 1<<24 }), { type: 'opus'});
+            const dispatcher = connection.play(await ytdl(searchedURL, {filter: "audioonly", highWaterMark: 1<<24 }), { type: 'opus', highWaterMark: 1});
             servers[message.guild.id].dispatch = dispatcher;
             let finnishedMessage = new Discord.MessageEmbed()
             .setDescription("Stopped Playing!")
@@ -588,7 +588,7 @@ client.on("message", async message => {
             servers[message.guild.id].queue = [];
             const connection = await message.member.voice.channel.join();
             connection.voice.setSelfDeaf(true);
-            const dispatcher = connection.play(await ytdl(args[0]), { type: 'opus', highWaterMark: 1<<23});
+            const dispatcher = connection.play(await ytdl(args[0], {filter: "audioonly", highWaterMark: 1<<24 }), { type: 'opus', highWaterMark: 1});
             servers[message.guild.id].dispatch = dispatcher;
             let finnishedMessage = new Discord.MessageEmbed()
             .setDescription("Stopped Playing!")
@@ -639,11 +639,11 @@ client.on("message", async message => {
 
 //leave
 
-    if(message.content.startsWith("öl") || message.content.startsWith("fuckoff") || message.content.startsWith("die") || message.content.startsWith("öl") || message.content.startsWith("sg")) {
-        message.guild.me.voice.channel.leave();
+    if(message.content.startsWith(curprefix+"öl") || message.content.startsWith(curprefix+"fuckoff") || message.content.startsWith(curprefix+"die") || message.content.startsWith(curprefix+"öl") || message.content.startsWith(curprefix+"sg")) {
         servers[message.guild.id].queue = [];
         servers[message.guild.id].playing = false;
         servers[message.guild.id].looping = false;
+        message.guild.me.voice.channel.leave();
     }
 
 //leave end

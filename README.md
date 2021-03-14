@@ -3,7 +3,7 @@
 
 ### List of the Functions Currently (Will change along the way...):
 - Simple play command with a queue system
-- Simple xp and level system
+- Simple xp, level and leaderboard system
 - Searching for gifs and random gifs
 - Random dog, cat, bird pictures
 - Random pictures

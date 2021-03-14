@@ -40,7 +40,6 @@ module.exports = {
                 tx+=Math.pow(2,a)*4;
                 
             };
-            console.log(tx);
             user = {
                 id: "",
                 level: 0,
@@ -75,13 +74,11 @@ module.exports = {
         userArray.sort((a,b) => {
             return b.totalxp - a.totalxp;
         });
-        console.log(userArray);
         for(b=0; b<userArray.length; b++) {
             counter++
             let oneUser = userArray[b];
             leaderboard = leaderboard + `${String(counter)}) <@${oneUser.id}> -- Total Experience: ${oneUser.totalxp}, Level: ${oneUser.level} \n`;
         }
-        console.log(leaderboard);
         const lbindex = Math.round(leaderboard.length / 2048) + 1;
         const lbarray = [];
         for (let i = 1; i <= lbindex; ++i) {

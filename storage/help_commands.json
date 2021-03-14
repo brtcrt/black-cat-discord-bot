@@ -19,6 +19,11 @@
                     "inline": false
                 },
                 {
+                    "name": "leaderboards",
+                    "value": "Shows the leaderboard for the current server.",
+                    "inline": false
+                },
+                {
                     "name": "clear x",
                     "value": "Deletes x amount of messages.",
                     "inline": false

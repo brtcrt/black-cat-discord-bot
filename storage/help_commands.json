@@ -34,6 +34,11 @@
                     "inline": false
                 },
                 {
+                    "name": "poll topic | opt | opt2 (up to 10, if no options, opens a yes/no poll.)",
+                    "value": "Opens a poll.",
+                    "inline": false
+                },
+                {
                     "name": "todo",
                     "value": "A small todo list.",
                     "inline": false
@@ -48,7 +53,14 @@
                     "value": "Changes user's nickname.",
                     "inline": false
                 }
-            ]
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
         },
         {
             "title": "Music Commands",
@@ -88,7 +100,14 @@
                     "value": "Searches for lyrics for the current track.",
                     "inline": false
                 }
-            ]
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
         },
         {
             "title": "Photos/GIFs",
@@ -123,7 +142,14 @@
                     "value": "Sends a random photo.",
                     "inline": false
                 }
-            ]
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
         },
         {
             "title": "Minigames",
@@ -137,8 +163,20 @@
                     "name": "rock, paper or scissors",
                     "value": "Play a game of rock,paper,scissors.",
                     "inline": false
+                },
+                {
+                    "name": "snake",
+                    "value": "Play a game of snake.",
+                    "inline": false
                 }
-            ]
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
         },
         {
             "title": "Misc Commands",
@@ -153,7 +191,14 @@
                     "value": "Get a close approximation of your ping.",
                     "inline": false
                 }
-            ]
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
         }
     ]
 }

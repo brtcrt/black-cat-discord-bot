@@ -2,8 +2,7 @@
 
 const Discord = require("discord.js");
 const path = require("path");
-let newxp  = require(path.join(__dirname, "../")+"/database/exp.json");
-
+const Levels = require("discord-xp");
 // Dependencies & variables end
 
 // Error Message Template
@@ -19,6 +18,15 @@ function SendErrorMessage(message, reason){
     message.channel.send(generalerrormessage);
 };
 
+async function CalculateXPReq(user){
+    let totalxpreq = 0;
+    for(i=1;i<=user.level;i++) {
+        totalxpreq = totalxpreq + Levels.xpFor(i);
+    };
+    console.log(totalxpreq+100);
+    return (totalxpreq+200) - user.xp;
+}
+
 // Error Message Template
 
 module.exports = {
@@ -27,36 +35,32 @@ module.exports = {
     cooldown: 1,
     aliases: ["rank", "xp", "experience", "exp"],
     async execute(message, args){
-        someIndex = newxp[message.guild.id].indexOf(message.author.id);
-        let curXP = newxp[message.guild.id][someIndex+1].exp;
-        let curLVL = newxp[message.guild.id][someIndex+1].lvl;
-        let XPreq = Math.pow(2, curLVL) * 4;
         if(!message.mentions.users.first()){
-            let XPNeeded = XPreq - curXP;
-            isCooldown = true;
+            const target = message.author;
+            const user = await Levels.fetch(target.id, message.guild.id);
+            if(!user) return SendErrorMessage(message, "Seems like you haven't earned any xp yet!");
+            const xpreq = await CalculateXPReq(user);
             let levelupMsg = new Discord.MessageEmbed()
             .setTitle(`Current stats for **${message.author.username}**:            `)
             .setColor("#d89ada")
-            .addField("Level: ", curLVL, true)
-            .addField("XP: ", curXP, true)
+            .addField("Level: ", user.level, true)
+            .addField("XP: ", user.xp, true)
             .setThumbnail(message.author.displayAvatarURL())
-            .setFooter(`${XPNeeded} xp until level up.`);
+            .setFooter(`${xpreq} xp until level up.`);
             message.channel.send(levelupMsg);
         } else{
-            let otherId = (message.mentions.users.first().id);
-            let someIndexforOther = newxp[message.guild.id].indexOf(otherId);
-            let XPNeededforOther = (4*(Math.pow(2,newxp[message.guild.id][someIndexforOther+1].lvl))) - (newxp[message.guild.id][someIndexforOther+1].exp);
-            let curXPforOther = newxp[message.guild.id][someIndexforOther+1].exp;
-            let curLVLforOther = newxp[message.guild.id][someIndexforOther+1].lvl;
-            isCooldown = true;
-            let levelofMsgforOther = new Discord.MessageEmbed()
-            .setTitle(`Current stats for **${message.mentions.users.first().username}**:            `)
+            const target = message.mentions.users.first();
+            const user = await Levels.fetch(target.id, message.guild.id);
+            if(!user) return SendErrorMessage(message, "Seems like you haven't earned any xp yet!");
+            const xpreq = await CalculateXPReq(user);
+            let levelupMsg = new Discord.MessageEmbed()
+            .setTitle(`Current stats for **${target.username}**:            `)
             .setColor("#d89ada")
-            .addField("Level: ", curLVLforOther, true)
-            .addField("XP: ", curXPforOther, true)
-            .setThumbnail(message.mentions.users.first().displayAvatarURL())
-            .setFooter(`${XPNeededforOther} xp until ${message.mentions.users.first().username} levels up.`);
-            message.channel.send(levelofMsgforOther);
+            .addField("Level: ", user.level, true)
+            .addField("XP: ", user.xp, true)
+            .setThumbnail(target.displayAvatarURL())
+            .setFooter(`${xpreq} xp until level up.`);
+            message.channel.send(levelupMsg);
         };
     }
 };

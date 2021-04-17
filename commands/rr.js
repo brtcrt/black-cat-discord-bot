@@ -28,8 +28,9 @@ module.exports = {
     cooldown: 1,
     aliases: ["rr"],
     async execute(message, args){
-        if(!message.guild.me.hasPermission("ADMINISTRATOR")) return SendErrorMessage(message, "I need to have administrator to run this command!");
+        //if(!message.guild.me.hasPermission("ADMINISTRATOR")) return SendErrorMessage(message, "I need to have administrator to run this command!");
         if(!message.guild.me.hasPermission("MANAGE_MESSAGES")) return SendErrorMessage(message, "I need to have MANAGE_MESSAGES to run this command!");
+        if(!message.guild.me.hasPermission("KICK_MEMBERS")) return SendErrorMessage(message, "I need to have KICK_MEMBERS to run this command!");
         let number = Math.floor( Math.random() * 5 + 1);
         let number2 = Math.floor(Math.random() * 5 + 1);
         if(!rrstreak[message.author.id]) {

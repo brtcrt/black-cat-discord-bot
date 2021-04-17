@@ -27,6 +27,6 @@ module.exports = {
     aliases: ["pingreal"],
     async execute(message, args){
         var resMsg = await message.channel.send('_ _');
-        resMsg.edit('Pong! Took ' + Math.round((resMsg.createdTimestamp - message.createdTimestamp) - client.ws.ping).toString() + " ms"); 
+        resMsg.edit('Pong! Took ' + Math.round((resMsg.createdTimestamp - message.createdTimestamp) - message.client.ws.ping).toString() + " ms"); 
     }
 };

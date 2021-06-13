@@ -1,27 +1,61 @@
 // node modules
 
 const Discord = require("discord.js");
-const { token, geniustoken, DBURI, port } = require("./config.json");
+const {
+  token,
+  geniustoken,
+  ytkey,
+  spotifyid,
+  spotifysecret,
+  dburi,
+  port,
+} = require("./config.json");
+const mongoose = require("mongoose");
 const nodefetch = require("node-fetch");
 let reminder = require("./database/reminders.json");
-let newxp = require("./database/exp.json");
-let prefixes = require("./database/prefixes.json");
 let botstats = require("./database/stats.json");
 const Pagination = require("discord-paginationembed");
-const embedPagination = require("./utils/embedPaginator");
+const matchYoutubeUrl = require("./utils/matchYoutubeUrl");
+const matchSpotifyUrl = require("./utils/checkSpotifyUrl");
+const checkUrl = require("./utils/checkUrl");
+const getPlaylistId = require("./utils/checkYTPlaylist");
 const cheerio = require("cheerio");
 const ytdl = require("ytdl-core-discord");
 const ytsr = require("ytsr");
+const ytpl = require("ytpl");
 const Canvas = require("canvas");
-var fs = require("fs");
-require("dotenv/config");
-const http = require("http");
-const dburi = DBURI;
-http.createServer().listen(port);
+const fs = require("fs");
+const Spotify = require("node-spotify-api");
+const search = require("youtube-search");
 const Levels = require("discord-xp");
 Levels.setURL(dburi);
 
 // node modules end
+
+// db stuff
+
+const GuildSchema = new mongoose.Schema({
+  guild_id: String,
+  prefix: String,
+});
+
+const Guild = mongoose.model("Guild", GuildSchema);
+
+mongoose.connect(dburi);
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", function () {
+  console.log("Connected to mongo.");
+});
+
+// db stuff end
+
+// spotify/youtube api client
+
+const spotify = new Spotify({ id: spotifyid, secret: spotifysecret });
+const opts = { maxResults: 1, key: ytkey };
+
+//spotify/youtube api client end
 
 // discord client stuff
 
@@ -34,17 +68,13 @@ const cooldowns = new Discord.Collection();
 // variables
 
 let curprefix = "=";
-let servers = {};
+let playServers = {};
 let someRandomThing;
 let searchResults;
 let someInfo;
 let lyricsURL;
 let lastSentPlaying;
-let someIndex;
 let allreminders = "allreminders";
-let notCooldown = true;
-let voteStays = 0;
-let voteKicks = 0;
 
 // variables end
 
@@ -149,7 +179,25 @@ client.on("guildCreate", async (guild) => {
 
 client.on("ready", () => {
   console.log("Ready!");
-  client.user.setActivity("=bot?");
+  setInterval(() => {
+    let activities_list = [
+      "=bot?",
+      "=snake | =bot?",
+      "with your mom | =bot?",
+      "30",
+      "russianroulette | =bot?",
+      "some music | =bot?",
+      "=play | =bot?",
+      "=bot? | =bot?",
+      "https://brtcrt.github.io/black-cat-website | =bot?",
+      `${client.guilds.cache.size} servers | =bot?`,
+    ];
+    const index = Math.floor(Math.random() * (activities_list.length - 1) + 1);
+    client.user.setActivity(activities_list[index], {
+      type:
+        index === 5 || (index === 3) | (index === 6) ? "LISTENING" : "PLAYING",
+    });
+  }, 10000);
 });
 
 client.on("message", async (message) => {
@@ -157,22 +205,88 @@ client.on("message", async (message) => {
   if (message.author.bot) return;
   let createdTime = message.createdTimestamp;
   let d = new Date(createdTime);
-  // for debug purposes. uncomment this If you need help at de-bugging console.log("At " + d.getHours() + ":" + d.getMinutes() + ", " + d.toDateString()+ ", " + message.author.username + " said " + '"' + message.content + '"' );
+  // console.log(
+  //     "At " +
+  //         d.getHours() +
+  //         ":" +
+  //         d.getMinutes() +
+  //         ", " +
+  //         d.toDateString() +
+  //         ", " +
+  //         message.author.username +
+  //         " said " +
+  //         '"' +
+  //         message.content +
+  //         '"'
+  // ); // for debug purposes. uncomment this If you need help at de-bugging
   //custom prefixes
 
-  if (!prefixes[message.guild.id]) {
-    prefixes[message.guild.id] = {
-      prefix: "=",
-    };
-    fs.writeFile(
-      "./database/prefixes.json",
-      JSON.stringify(prefixes),
-      (err) => {
-        if (err) console.log(err);
+  // const [guild, created] = await Guild.findOrCreate({
+  //     where: { guild_id: message.guild.id },
+  //     defaults: {
+  //         prefix: "=",
+  //     },
+  // });
+  // if (created) {
+  //     guild.save();
+  // }
+
+  Guild.findOne({ guild_id: message.guild.id }, "prefix", (err, guild) => {
+    if (err) return console.log(err);
+    if (!guild) {
+      const new_guild = new Guild({
+        guild_id: message.guild.id,
+        prefix: "=",
+      });
+      console.log("create new guild");
+      new_guild.save((err) => {
+        if (err) return console.log(err);
+      });
+    } else {
+      curprefix = guild.prefix;
+    }
+  });
+
+  const args = message.content.slice(curprefix.length).trim().split(/ +/);
+  if (
+    message.content.startsWith(curprefix + "prefix") ||
+    message.content.startsWith(curprefix + "changeprefix")
+  ) {
+    if (!args[1]) {
+      let preembed = new Discord.MessageEmbed()
+        .setThumbnail(message.guild.iconURL())
+        .setDescription(`Current prefix for this guild is ${curprefix}`);
+      return message.channel.send({ embed: preembed });
+    } else {
+      let new_prefix = args[1];
+      if (new_prefix === "") {
+        return SendErrorMessage("Can't set prefix to nothing!");
       }
-    );
+      await Guild.findOne(
+        { guild_id: message.guild.id },
+        "prefix",
+        async (err, guild) => {
+          if (err) {
+            console.log(err);
+            return SendErrorMessage(
+              message,
+              "Something went wrong while changing the prefix. Please try again."
+            );
+          }
+
+          guild.prefix = new_prefix;
+          await guild.save();
+          console.log("new prefix");
+          if (guild.prefix === new_prefix) {
+            SendSuccessMessage(
+              message,
+              'Command prefix is now "' + args[1] + '"'
+            );
+          }
+        }
+      );
+    }
   }
-  curprefix = prefixes[message.guild.id].prefix;
   //level || rank system
   const randomAmountOfXp = Math.floor(Math.random() * 20) + 10; // Min 10, Max 30
   const hasLeveledUp = await Levels.appendXp(
@@ -196,7 +310,6 @@ client.on("message", async (message) => {
   }
   if (!message.content.startsWith(curprefix) || message.author.bot) return;
   //command handling
-  const args = message.content.slice(curprefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
   const command =
@@ -288,14 +401,31 @@ var timerID = setInterval(function () {
 //All music related commands & votekick
 
 async function getVideoDetails(video) {
-  function learnRegExp(s) {
-    var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-    return regexp.test(s);
-  }
-  validornot = learnRegExp(video);
+  validornot = checkUrl(video);
   if (!validornot) {
-    const searchResults = await ytsr(video);
-    return searchResults;
+    let videoDetails = {
+      url: "",
+      title: "",
+      channelname: "",
+      channelurl: "",
+      thumbnail: "",
+    };
+    await search(video, opts, function (err, results) {
+      if (err) return console.log(err);
+      const _videoDetails = {
+        url: results[0].link,
+        title: results[0].title,
+        channelname: results[0].channelTitle,
+        channelurl: `https://www.youtube.com/channel/${results[0].channelId}`,
+        thumbnail: results[0].thumbnails.default.url,
+      };
+      videoDetails.url = _videoDetails.url;
+      videoDetails.title = _videoDetails.title;
+      videoDetails.channelname = _videoDetails.channelname;
+      videoDetails.channelurl = _videoDetails.channelurl;
+      videoDetails.thumbnail = _videoDetails.thumbnail;
+    });
+    return videoDetails;
   } else {
     const someInfo = await ytdl.getBasicInfo(video);
     return someInfo.videoDetails;
@@ -352,27 +482,29 @@ async function playNewTrack(message, loopingTrack) {
   let startedMessage;
   let nextTrack;
   let nextTrackURL;
-  if (!message.guild.me.hasPermission("DELETE_MESSAGES")) {
-  } else lastSentPlaying.delete();
-  if (!servers[message.guild.id].looping) {
-    //servers[message.guild.id].dispatch.end();
-    nextTrack = servers[message.guild.id].queue.shift();
+  // console.log(playServers[message.guild.id])
+  if (message.guild.me.hasPermission("MANAGE_MESSAGES") && lastSentPlaying) {
+    lastSentPlaying.delete();
+  } else console.log(lastSentPlaying);
+  if (!playServers[message.guild.id].looping) {
+    //playServers[message.guild.id].dispatch.end();
+    nextTrack = playServers[message.guild.id].queue.shift();
     console.log(nextTrack);
     nextTrackURL = nextTrack.url;
   }
 
-  if (servers[message.guild.id].looping) {
+  if (playServers[message.guild.id].looping) {
     console.log(loopingTrack);
     nextTrack = loopingTrack;
     nextTrackURL = loopingTrack.url;
   }
-  const connection = servers[message.guild.id].connection;
+  const connection = playServers[message.guild.id].connection;
   connection.voice.setSelfDeaf(true);
-  servers[message.guild.id].loopinginfo.title = nextTrack.title;
-  servers[message.guild.id].loopinginfo.url = nextTrackURL;
-  servers[message.guild.id].loopinginfo.channelname = nextTrack.channelname;
-  servers[message.guild.id].loopinginfo.channelurl = nextTrack.channelurl;
-  servers[message.guild.id].loopinginfo.thumbnail = nextTrack.thumbnail;
+  playServers[message.guild.id].loopinginfo.title = nextTrack.title;
+  playServers[message.guild.id].loopinginfo.url = nextTrackURL;
+  playServers[message.guild.id].loopinginfo.channelname = nextTrack.channelname;
+  playServers[message.guild.id].loopinginfo.channelurl = nextTrack.channelurl;
+  playServers[message.guild.id].loopinginfo.thumbnail = nextTrack.thumbnail;
   const dispatcher = connection.play(
     await ytdl(nextTrackURL, {
       filter: "audioonly",
@@ -380,8 +512,8 @@ async function playNewTrack(message, loopingTrack) {
     }),
     { type: "opus", highWaterMark: 1 }
   );
-  servers[message.guild.id].dispatch = dispatcher;
-  servers[message.guild.id].playing = true;
+  playServers[message.guild.id].dispatch = dispatcher;
+  playServers[message.guild.id].playing = true;
   startedMessage = new Discord.MessageEmbed()
     .setTitle("Now Playing:")
     .setColor("RANDOM")
@@ -397,17 +529,21 @@ async function playNewTrack(message, loopingTrack) {
     .setDescription("Stopped Playing!")
     .setColor("#f01717");
   dispatcher.on("finish", () => {
-    if (servers[message.guild.id].looping) {
+    if (playServers[message.guild.id].looping) {
       return playNewTrack(message, nextTrack);
     }
-    if (servers[message.guild.id].queue[0] != null) {
+    if (playServers[message.guild.id].queue[0] != null) {
       console.log("Playing next track.");
       return playNewTrack(message);
     } else {
-      servers[message.guild.id].playing = false;
+      playServers[message.guild.id].playing = false;
       console.log("Finished playing!");
       message.channel.send(finnishedMessage);
       dispatcher.destroy();
+      playServers[message.guild.id].queue = [];
+      playServers[message.guild.id].playing = false;
+      playServers[message.guild.id].looping = false;
+      playServers[message.guild.id].paused = false;
       message.guild.me.voice.channel.leave();
     }
   });
@@ -439,14 +575,14 @@ client.on("message", async (message) => {
         message,
         "You need to be in a voice channel to run this command."
       );
-    if (!servers[message.guild.id].playing)
+    if (!playServers[message.guild.id].playing)
       return SendErrorMessage(message, "No track is being played.");
-    if (!servers[message.guild.id].loopinginfo)
+    if (!playServers[message.guild.id].loopinginfo)
       return SendErrorMessage(message, "No track is being played.");
     const sentMessage = await message.channel.send("Searching for lyrics...");
     let lyrics = await findLyrics(
       message,
-      servers[message.guild.id].loopinginfo
+      playServers[message.guild.id].loopinginfo
     );
     if (!lyrics) return SendErrorMessage(message, "Couldn't find any lyrics");
     const lyricsIndex = Math.round(lyrics.length / 2048) + 1;
@@ -456,7 +592,7 @@ client.on("message", async (message) => {
       lyricsArray.push(
         new Discord.MessageEmbed()
           .setTitle(
-            `${servers[message.guild.id].loopinginfo.title}, Page #` + i
+            `${playServers[message.guild.id].loopinginfo.title}, Page #` + i
           )
           .setDescription(lyrics.slice(b * 2048, i * 2048))
           .setFooter("Provided by genius.com")
@@ -480,15 +616,15 @@ client.on("message", async (message) => {
   //loop
 
   if (message.content.startsWith(curprefix + "loop")) {
-    if (servers[message.guild.id].looping) {
-      if (!servers[message.guild.id].playing)
+    if (playServers[message.guild.id].looping) {
+      if (!playServers[message.guild.id].playing)
         return SendErrorMessage(message, "No track is being played.");
-      servers[message.guild.id].looping = false;
-      return SendSuccessMessage(message, "Unlooped tracked.");
+      playServers[message.guild.id].looping = false;
+      return SendSuccessMessage(message, "Unlooped track.");
     } else {
-      if (!servers[message.guild.id].playing)
+      if (!playServers[message.guild.id].playing)
         return SendErrorMessage(message, "No track is being played.");
-      servers[message.guild.id].looping = true;
+      playServers[message.guild.id].looping = true;
       return SendSuccessMessage(message, "Now looping track.");
     }
   }
@@ -503,25 +639,24 @@ client.on("message", async (message) => {
         message,
         "You need to be in a voice channel to run this command."
       );
-    if (!servers[message.guild.id].playing)
+    if (!playServers[message.guild.id].playing)
       return SendErrorMessage(message, "No track is being played.");
-    if (!servers[message.guild.id].dispatch) return SendErrorMessage(message);
-    if (servers[message.guild.id].dispatch.paused === false) {
-      await servers[message.guild.id].dispatch.pause();
-      //servers[message.guild.id].paused = true;
+    if (!playServers[message.guild.id].dispatch)
+      return SendErrorMessage(message);
+    if (playServers[message.guild.id].dispatch.paused === false) {
+      await playServers[message.guild.id].dispatch.pause();
       return SendSuccessMessage(message, "Paused!");
     }
-    if (servers[message.guild.id].dispatch.paused === true) {
-      console.log(servers[message.guild.id].dispatch);
+    if (playServers[message.guild.id].dispatch.paused === true) {
+      console.log(playServers[message.guild.id].dispatch);
       try {
-        servers[message.guild.id].dispatch.pause();
-        servers[message.guild.id].dispatch.resume();
-        servers[message.guild.id].dispatch.pause();
-        servers[message.guild.id].dispatch.resume();
+        playServers[message.guild.id].dispatch.pause();
+        playServers[message.guild.id].dispatch.resume();
+        playServers[message.guild.id].dispatch.pause();
+        playServers[message.guild.id].dispatch.resume();
       } catch (e) {
         console.log(e);
       }
-      //servers[message.guild.id].paused = false;
       return SendSuccessMessage(message, "Unpaused!");
     }
   }
@@ -529,7 +664,6 @@ client.on("message", async (message) => {
   //pause/unpause end
 
   //skip
-
   if (
     message.content.startsWith(curprefix + "skip") ||
     message.content.startsWith(curprefix + "next")
@@ -539,11 +673,11 @@ client.on("message", async (message) => {
         message,
         "You need to be in a voice channel to run this command."
       );
-    if (!servers[message.guild.id])
+    if (!playServers[message.guild.id])
       return SendErrorMessage(message, "Queue is currently empty!");
-    if (!servers[message.guild.id].playing)
+    if (!playServers[message.guild.id].playing)
       return SendErrorMessage(message, "Queue is currently empty!");
-    if (servers[message.guild.id].queue[0] == null)
+    if (playServers[message.guild.id].queue[0] == null)
       return SendErrorMessage(message, "Queue is currently empty!");
     return await playNewTrack(message);
   }
@@ -556,36 +690,40 @@ client.on("message", async (message) => {
     message.content.startsWith(curprefix + "queue") &&
     !message.content.startsWith(curprefix + "play")
   ) {
-    if (!servers[message.guild.id])
+    if (!playServers[message.guild.id])
       return SendErrorMessage(message, "Queue is currently empty!");
-    if (!servers[message.guild.id].playing)
+    if (!playServers[message.guild.id].playing)
       return SendErrorMessage(message, "Queue is currently empty!");
-    if (servers[message.guild.id].queue[0] == null)
+    if (playServers[message.guild.id].queue[0] == null)
       return SendErrorMessage(message, "Queue is currently empty!");
     if (!message.guild.me.hasPermission("MANAGE_MESSAGES"))
       return SendErrorMessage(
         message,
         "I need to have MANAGE_MESSAGES to run this command!"
       );
-    let qinfo = "";
-    for (let i = 0; i < servers[message.guild.id].queue.length; i++) {
-      let vidInfo = servers[message.guild.id].queue[i];
-      qinfo =
-        qinfo +
+    let qinfo = [];
+    for (let i = 0; i < playServers[message.guild.id].queue.length; i++) {
+      let vidInfo = playServers[message.guild.id].queue[i];
+      qinfo.push(
         (i + 1).toString() +
-        ") " +
-        `[${vidInfo.title}](${vidInfo.url})  -  [${vidInfo.channelname}](${vidInfo.channelurl})` +
-        "\n ";
-      console.log(qinfo);
+          ") " +
+          `[${vidInfo.title}](${vidInfo.url})  -  [${vidInfo.channelname}](${vidInfo.channelurl})` +
+          "\n "
+      );
     }
-    const qIndex = Math.round(qinfo.length / 2048) + 1;
+    console.log(qinfo);
+    const qIndex = Math.round(qinfo.length / 8) + 1;
+    console.log(qIndex);
     const qArray = [];
-    for (let i = 1; i <= qIndex; ++i) {
+    for (let i = 0; i <= qIndex; i++) {
+      let qText = "";
+      qText += qinfo.slice(i * 8, (i + 1) * 8).join("");
+      console.log(qText);
       let b = i - 1;
       qArray.push(
         new Discord.MessageEmbed()
-          .setTitle(`${message.guild.name}' queue, Page #` + i)
-          .setDescription(qinfo.slice(b * 2048, i * 2048))
+          .setTitle(`${message.guild.name}' queue, Page #${i + 1}`)
+          .setDescription(qText)
       );
     }
     const qEmbed = new Pagination.Embeds()
@@ -624,8 +762,8 @@ client.on("message", async (message) => {
         "You didn't give a link or a search term."
       );
     console.log(args);
-    if (!servers[message.guild.id]) {
-      servers[message.guild.id] = {
+    if (!playServers[message.guild.id]) {
+      playServers[message.guild.id] = {
         dispatch: someRandomThing,
         connection: someRandomThing,
         queue: [],
@@ -635,104 +773,164 @@ client.on("message", async (message) => {
         loopinginfo: {},
       };
     }
-    function learnRegExp(s) {
-      var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-      return regexp.test(s);
-    }
-    validornot = learnRegExp(args[0]);
+    validornot = checkUrl(args[0]);
     if (!validornot) {
-      if (servers[message.guild.id].playing) {
-        searchResults = await getVideoDetails(args.join(" "));
-        let channelTitle;
-        let channelURL;
-        let searchedURL = searchResults.items[0].url;
-        let searched = searchResults.items[0];
-        let vidTitle = searched.title;
-        if (!searched.author) {
-          channelTitle = "Couldn't find channel.";
-          channelURL = "";
-        } else {
-          channelTitle = searched.author.name;
-          channelURL = searched.author.url;
-        }
-        let nextTrackDetails = {
-          url: searchedURL,
-          title: vidTitle,
-          channelname: channelTitle,
-          channelurl: channelURL,
-          thumbnail: searched.bestThumbnail.url,
-        };
-        servers[message.guild.id].queue.push(nextTrackDetails);
-        console.log(servers[message.guild.id].queue);
-        return SendSuccessMessage(
-          message,
-          "Successfuly added " +
-            `[${vidTitle}](${searchedURL})  -  [${channelTitle}](${channelURL})` +
-            " to the queue!"
-        );
-      }
-      servers[message.guild.id].playing = true;
-      servers[message.guild.id].queue = [];
-      searchResults = await getVideoDetails(args.join(" "));
-      let searchedURL = searchResults.items[0].url;
-      let searched = searchResults.items[0];
-      let vidTitle = searched.title;
-      let channelTitle = searched.author.name;
-      let channelURL = searched.author.url;
-      servers[message.guild.id].loopinginfo = {
-        url: searchedURL,
-        title: vidTitle,
-        channelname: channelTitle,
-        channelurl: channelURL,
-        thumbnail: searched.bestThumbnail.url,
+      const searched = await ytsr(args.join(" "), { limit: 1 });
+      const nextTrackDetails = searched.items[0];
+      console.log(nextTrackDetails);
+      const nextTrack = {
+        url: nextTrackDetails.url,
+        title: nextTrackDetails.title,
+        channelname: nextTrackDetails.author.name,
+        channelurl: nextTrackDetails.author.url,
+        thumbnail: nextTrackDetails.bestThumbnail.url,
       };
+      playServers[message.guild.id].queue.push(nextTrack);
+      console.log(playServers[message.guild.id].queue);
+      if (playServers[message.guild.id].playing === true) {
+        return SendSuccessMessage(
+          message,
+          "Successfuly added " +
+            `[${nextTrackDetails.title}](${nextTrackDetails.url})  -  [${nextTrackDetails.author.name}](${nextTrackDetails.channelurl})` +
+            " to the queue!"
+        );
+      }
       const connection = await message.member.voice.channel.join();
-      servers[message.guild.id].connection = connection;
+      playServers[message.guild.id].connection = connection;
       connection.voice.setSelfDeaf(true);
-      const dispatcher = connection.play(
-        await ytdl(searchedURL, {
-          filter: "audioonly",
-          highWaterMark: 1 << 25,
-        }),
-        { type: "opus", highWaterMark: 1 }
-      );
-      servers[message.guild.id].dispatch = dispatcher;
-      let finnishedMessage = new Discord.MessageEmbed()
-        .setDescription("Stopped Playing!")
-        .setColor("#f01717");
-      dispatcher.on("start", async () => {
-        let vidTitle = searched.title;
-        let channelTitle = searched.author.name;
-        let channelURL = searched.author.url;
-        let startedMessage = new Discord.MessageEmbed()
-          .setTitle("Now Playing:")
-          .setColor("RANDOM")
-          .setDescription(
-            `[${vidTitle}](${searchedURL})  -  [${channelTitle}](${channelURL})`
-          )
-          .setThumbnail(searched.bestThumbnail.url);
-        console.log("Now playing!");
-        lastSentPlaying = await message.channel.send(startedMessage);
-      });
-
-      dispatcher.on("finish", () => {
-        if (servers[message.guild.id].looping) {
-          return playNewTrack(message, servers[message.guild.id].loopinginfo);
-        }
-        if (servers[message.guild.id].queue[0] != null) {
-          console.log("Playing next track.");
-          return playNewTrack(message);
-        } else {
-          servers[message.guild.id].playing = false;
-          console.log("Finished playing!");
-          message.channel.send(finnishedMessage);
-          dispatcher.destroy();
-          message.guild.me.voice.channel.leave();
-        }
-      });
-      dispatcher.on("error", console.error);
+      playNewTrack(message);
     } else {
-      if (servers[message.guild.id].playing) {
+      isSpotify = matchSpotifyUrl(args[0]);
+      isVideo = matchYoutubeUrl(args[0]);
+      playlistId = getPlaylistId(args[0]);
+      if (isSpotify !== false) {
+        console.log(isSpotify);
+        var name_title = "";
+        var name_title_tracks = "";
+        var playlist_songs = [];
+        await spotify
+          .request(
+            `https://api.spotify.com/v1/${isSpotify.query}/${isSpotify.id}`
+          )
+          .then((data) => {
+            name_title_tracks =
+              isSpotify.query === "tracks"
+                ? `${data.artists[0].name} - ${data.name}`
+                : undefined;
+            playlist_songs =
+              isSpotify.query === "playlists" ? data.tracks.items : undefined;
+          })
+          .catch(function (err) {
+            console.error("Error occurred: " + err);
+          });
+        if (isSpotify.query === "tracks") {
+          const searched = await ytsr(name_title_tracks, {
+            limit: 1,
+          });
+          const nextTrackDetails = searched.items[0];
+          console.log(nextTrackDetails);
+          const nextTrack = {
+            url: nextTrackDetails.url,
+            title: nextTrackDetails.title,
+            channelname: nextTrackDetails.author.name,
+            channelurl: nextTrackDetails.author.url,
+            thumbnail: nextTrackDetails.bestThumbnail.url,
+          };
+          playServers[message.guild.id].queue.push(nextTrack);
+          console.log(playServers[message.guild.id].queue);
+          if (playServers[message.guild.id].playing === true) {
+            return SendSuccessMessage(
+              message,
+              "Successfuly added " +
+                `[${nextTrackDetails.title}](${nextTrackDetails.url})  -  [${nextTrackDetails.author.name}](${nextTrackDetails.channelurl})` +
+                " to the queue!"
+            );
+          }
+          const connection = await message.member.voice.channel.join();
+          playServers[message.guild.id].connection = connection;
+          connection.voice.setSelfDeaf(true);
+          playNewTrack(message);
+        } else if (isSpotify.query === "playlists") {
+          console.log(playlist_songs.length);
+          const name_title_first = `${playlist_songs[0].track.artists[0].name} - ${playlist_songs[0].track.name}`;
+          const firstsearched = await ytsr(name_title_first, {
+            limit: 1,
+          });
+          const firstTrackDetails = firstsearched.items[0];
+          const nextTrack_playlist = {
+            url: firstTrackDetails.url,
+            title: firstTrackDetails.title,
+            channelname: firstTrackDetails.author.name,
+            channelurl: firstTrackDetails.author.url,
+            thumbnail: firstTrackDetails.bestThumbnail.url,
+          };
+          playServers[message.guild.id].queue.push(nextTrack_playlist);
+          playlist_songs.splice(0, 1);
+          playlist_songs.forEach(async (song) => {
+            name_title = `${song.track.artists[0].name} - ${song.track.name}`;
+            const searched = await ytsr(name_title, {
+              limit: 1,
+            });
+            const nextTrackDetails = searched.items[0];
+            const nextTrack_playlist = {
+              url: nextTrackDetails.url,
+              title: nextTrackDetails.title,
+              channelname:
+                nextTrackDetails.author !== undefined
+                  ? nextTrackDetails.author.name
+                  : "Couldn't find channel",
+              channelurl:
+                nextTrackDetails.author !== undefined
+                  ? nextTrackDetails.author.url
+                  : "",
+              thumbnail:
+                nextTrackDetails.bestThumbnail !== undefined
+                  ? nextTrackDetails.bestThumbnail.url
+                  : "https://i.imgur.com/ebv8tyw.png",
+            };
+            playServers[message.guild.id].queue.push(nextTrack_playlist);
+          });
+          if (playServers[message.guild.id].playing === true) {
+            return SendSuccessMessage(
+              message,
+              "Successfuly added " +
+                `${playlist_songs.length + 1} tracks` +
+                " to the queue!"
+            );
+          }
+          SendSuccessMessage(
+            message,
+            "Successfuly added " +
+              `${playlist_songs.length + 1} tracks` +
+              " to the queue!"
+          );
+          const connection = await message.member.voice.channel.join();
+          playServers[message.guild.id].connection = connection;
+          connection.voice.setSelfDeaf(true);
+          playNewTrack(message);
+        } else
+          return SendErrorMessage(message, "Couldn't find song on youtube.");
+      } else if (playlistId !== false) {
+        const playlist = await ytpl(playlistId.toString());
+        const list_items = playlist.items;
+        list_items.forEach((item) => {
+          item_info = {
+            title: item.title,
+            url: item.url,
+            channelname: item.author.name,
+            channelurl: item.author.url,
+            thumbnail: item.thumbnails[0].url,
+          };
+          playServers[message.guild.id].queue.push(item_info);
+        });
+        SendSuccessMessage(message, `Queued ${list_items.length} videos.`);
+        if (!playServers[message.guild.id].playing) {
+          const connection = await message.member.voice.channel.join();
+          connection.voice.setSelfDeaf(true);
+          playServers[message.guild.id].connection = connection;
+          playNewTrack(message);
+        }
+      } else if (isVideo !== false) {
         someInfo = await getVideoDetails(args[0]);
         let vidTitle = someInfo.title;
         let channelTitle = someInfo.author.name;
@@ -745,69 +943,40 @@ client.on("message", async (message) => {
           channelurl: channelURL,
           thumbnail: someInfo.thumbnails[0].url,
         };
-        servers[message.guild.id].queue.push(nextTrackDetails);
-        console.log(servers[message.guild.id].queue);
-        return SendSuccessMessage(
-          message,
-          "Successfuly added " +
-            `[${vidTitle}](${args[0]})  -  [${channelTitle}](${channelURL})` +
-            " to the queue!"
-        );
-      }
-      servers[message.guild.id].playing = true;
-      servers[message.guild.id].queue = [];
-      const connection = await message.member.voice.channel.join();
-      connection.voice.setSelfDeaf(true);
-      const dispatcher = connection.play(
-        await ytdl(args[0], {
-          filter: "audioonly",
-          highWaterMark: 1 << 25,
-        }),
-        { type: "opus", highWaterMark: 1 }
-      );
-      servers[message.guild.id].dispatch = dispatcher;
-      let finnishedMessage = new Discord.MessageEmbed()
-        .setDescription("Stopped Playing!")
-        .setColor("#f01717");
-      dispatcher.on("start", async () => {
-        someInfo = await getVideoDetails(args[0]);
-        let vidTitle = someInfo.title;
-        let channelTitle = someInfo.author.name;
-        let channelURL =
-          "https://www.youtube.com/channel/" + someInfo.channelId;
-        servers[message.guild.id].loopinginfo = {
-          url: args[0],
-          title: vidTitle,
-          channelname: channelTitle,
-          channelurl: channelURL,
-          thumbnail: someInfo.thumbnails[0].url,
-        };
-        let startedMessage = new Discord.MessageEmbed()
-          .setTitle("Now Playing:")
-          .setColor("RANDOM")
-          .setDescription(
-            `[${vidTitle}](${args[0]})  -  [${channelTitle}](${channelURL})`
-          )
-          .setThumbnail(someInfo.thumbnails[0].url);
-        console.log("Now playing!");
-        message.channel.send(startedMessage);
-      });
-
-      dispatcher.on("finish", () => {
-        if (servers[message.guild.id].looping) {
-          return playNewTrack(message, servers[message.guild.id].loopinginfo);
-        } else if (servers[message.guild.id].queue[0] != null) {
-          console.log("Playing next track.");
-          return playNewTrack(message);
+        playServers[message.guild.id].queue.push(nextTrackDetails);
+        console.log(playServers[message.guild.id].queue);
+        if (playServers[message.guild.id].playing === true) {
+          return SendSuccessMessage(
+            message,
+            "Successfuly added " +
+              `[${vidTitle}](${args[0]})  -  [${channelTitle}](${channelURL})` +
+              " to the queue!"
+          );
         } else {
-          servers[message.guild.id].playing = false;
-          console.log("Finished playing!");
-          message.channel.send(finnishedMessage);
-          dispatcher.destroy();
-          message.guild.me.voice.channel.leave();
+          playServers[message.guild.id].playing = true;
+          playServers[message.guild.id].queue = [];
+          someInfo = await getVideoDetails(args[0]);
+          let vidTitle = someInfo.title;
+          let channelTitle = someInfo.author.name;
+          let channelURL =
+            "https://www.youtube.com/channel/" + someInfo.channelId;
+          let nextTrackDetails = {
+            url: args[0],
+            title: vidTitle,
+            channelname: channelTitle,
+            channelurl: channelURL,
+            thumbnail: someInfo.thumbnails[0].url,
+          };
+          playServers[message.guild.id].queue.push(nextTrackDetails);
+
+          const connection = await message.member.voice.channel.join();
+          connection.voice.setSelfDeaf(true);
+          playServers[message.guild.id].connection = connection;
+          playNewTrack(message);
         }
-      });
-      dispatcher.on("error", console.error);
+      } else {
+        return SendErrorMessage(message, "That isn't a Youtube url!");
+      }
     }
   }
 
@@ -822,10 +991,10 @@ client.on("message", async (message) => {
     message.content.startsWith(curprefix + "öl") ||
     message.content.startsWith(curprefix + "sg")
   ) {
-    servers[message.guild.id].queue = [];
-    servers[message.guild.id].playing = false;
-    servers[message.guild.id].looping = false;
-    servers[message.guild.id].paused = false;
+    playServers[message.guild.id].queue = [];
+    playServers[message.guild.id].playing = false;
+    playServers[message.guild.id].looping = false;
+    playServers[message.guild.id].paused = false;
     message.guild.me.voice.channel.leave();
   }
 
@@ -835,7 +1004,7 @@ client.on("message", async (message) => {
 
   if (
     message.content.startsWith(curprefix + "cemalroulette") &&
-    message.guild.id == "823487442350899221"
+    message.guild.id == "486163617507573760"
   ) {
     message.reply(
       `${Math.floor(Math.random() * 24)} hours, ${

@@ -5,7 +5,7 @@
             "fields": [
                 {
                     "name": "bot?",
-                    "value": "This message you retard.",
+                    "value": "This message you idiot.",
                     "inline": false
                 },
                 {
@@ -155,6 +155,16 @@
             "title": "Minigames",
             "fields": [
                 {
+                    "name": "chess @user",
+                    "value": "Play a game of chess with a friend.",
+                    "inline": false
+                },
+                {
+                    "name": "minesweeper",
+                    "value": "Play a game of minesweeper.",
+                    "inline": false
+                },
+                {
                     "name": "russianroulette / rr",
                     "value": "Play a game of russian roulette. If you die you die.*(get kicked from server)*",
                     "inline": false
@@ -167,6 +177,16 @@
                 {
                     "name": "snake",
                     "value": "Play a game of snake.",
+                    "inline": false
+                },
+                {
+                    "name": "tic-tac-toe",
+                    "value": "Play a game of tic-tac-toe.",
+                    "inline": false
+                },
+                {
+                    "name": "gameoflife",
+                    "value": "Play Game of Life.",
                     "inline": false
                 }
             ],
@@ -182,8 +202,33 @@
             "title": "Misc Commands",
             "fields": [
                 {
-                    "name": "weather",
+                    "name": "scp (scp number)",
+                    "value": "Get the wiki page of an scp in embed format.",
+                    "inline": false
+                },
+                {
+                    "name": "generatemarkov",
+                    "value": "Generates a message similar to others using a markov chain.",
+                    "inline": false
+                },
+                {
+                    "name": "osu-pp (link) +(optional: mods)",
+                    "value": "Returns the possible pp values for a given osu! beatmap.",
+                    "inline": false
+                },
+                {
+                    "name": "uwuify (message)",
+                    "value": "Uwuifys a given message.",
+                    "inline": false
+                },
+                {
+                    "name": "weather (place)",
                     "value": "Get weather info abot a place.",
+                    "inline": false
+                },
+                {
+                    "name": "pokemon (name/id)",
+                    "value": "Get basic information about a pokemon.",
                     "inline": false
                 },
                 {

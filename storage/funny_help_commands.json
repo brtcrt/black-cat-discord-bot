@@ -1,0 +1,154 @@
+{
+    "embeds": [
+        {
+            "title": "Catgirl commands",
+            "fields": [
+                {
+                    "name": "mewhenpathofexile",
+                    "value": "Random catgirl.",
+                    "inline": false
+                },
+                {
+                    "name": "mewhendestiny2",
+                    "value": "Random catgirl.",
+                    "inline": false
+                },
+                {
+                    "name": "mewhenegeaglar",
+                    "value": "Random catgirl.",
+                    "inline": false
+                },
+                {
+                    "name": "dorukabigf",
+                    "value": "Random catgirl.",
+                    "inline": false
+                },
+                {
+                    "name": "bennezamantuvalettepersona5oynamayagiderken",
+                    "value": "Random catgirl.",
+                    "inline": false
+                }
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
+        },
+        {
+            "title": "nhentai code/random",
+            "fields": [
+                {
+                    "name": "egeabim",
+                    "value": "Random doujin.",
+                    "inline": false
+                },
+                {
+                    "name": "hentaiciege",
+                    "value": "Random doujin.",
+                    "inline": false
+                },
+                {
+                    "name": "egeabim (code)",
+                    "value": "Search doujin by id.",
+                    "inline": false
+                },
+                {
+                    "name": "hentaiciege (code)",
+                    "value": "Search doujin by id.",
+                    "inline": false
+                }
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
+        },
+        {
+            "title": "nhentai Search",
+            "fields": [
+                {
+                    "name": "egeabigfsearch (search term)",
+                    "value": "Search nhentai using terms.",
+                    "inline": false
+                },
+                {
+                    "name": "dorukabigfsearch (search term)",
+                    "value": "Search nhentai using terms.",
+                    "inline": false
+                }
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
+        },
+        {
+            "title": "Read nhentai doujins",
+            "fields": [
+                {
+                    "name": "okumayazmabilinceben (code)",
+                    "value": "Read nhentai doujins using a code.",
+                    "inline": false
+                },
+                {
+                    "name": "dorukabimatprojesi (code)",
+                    "value": "Read nhentai doujins using a code.",
+                    "inline": false
+                },
+                {
+                    "name": "egesicarkenbunuyapiyor (code)",
+                    "value": "Read nhentai doujins using a code.",
+                    "inline": false
+                }
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
+        },
+        {
+            "title": "rule34 Search",
+            "fields": [
+                {
+                    "name": "jooobiden (search term)",
+                    "value": "Search rule34 using terms.",
+                    "inline": false
+                },
+                {
+                    "name": "egewhentwohamburger (search term)",
+                    "value": "Search rule34 using terms.",
+                    "inline": false
+                },
+                {
+                    "name": "egewhensex (search term)",
+                    "value": "Search rule34 using terms.",
+                    "inline": false
+                },
+                {
+                    "name": "theindustrialrevolutionanditsconsequenceshavebeenadisasterforthehumanrace (search term)",
+                    "value": "Search rule34 using terms.",
+                    "inline": false
+                }
+            ],
+            "footer": {
+                "text": ""
+            },
+            "color": "RANDOM",
+            "thumbnail": {
+                "url": ""
+            }
+        }
+    ]
+}

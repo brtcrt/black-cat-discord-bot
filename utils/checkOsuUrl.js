@@ -1,7 +1,7 @@
 function matchOsuUrl(url) {
-    var p =
+    let p =
         /^(?:https?:\/\/)?(?:osu\.)?ppy\.sh\/(?:(?:beatmapsets\/))([0-9]*#)(.*\/)([0-9]*\/|.*)(?:\S+)?$/;
-    var matches = url.match(p);
+    let matches = url.match(p);
     if (matches) {
         return {
             setid: matches[1],

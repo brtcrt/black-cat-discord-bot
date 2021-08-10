@@ -1,3 +1,5 @@
+const { Permissions } = require("discord.js");
+
 const embedPagination = async (
     msg,
     pages,
@@ -5,7 +7,9 @@ const embedPagination = async (
     emojiList = ["⏪", "⏩", "🗑️"],
     timeout = 120000
 ) => {
-    const warning_msg = !msg.guild.me.hasPermission("MANAGE_MESSAGES")
+    const warning_msg = !msg.guild.me.permissions.has(
+        Permissions.FLAGS.MANAGE_MESSAGES
+    )
         ? await msg.channel.send(
               "I don't have MANAGE_MESSAGE as a permission so I can't remove your reactions. If you want to have an easier time using these embeds, you might want to consider giving me the permission."
           )
@@ -18,18 +22,19 @@ const embedPagination = async (
         ? (pages[page].footer.text += `Page ${page + 1} of ${pages.length}`)
         : null;
     const curPage = await msg.channel.send({
-        embed: pages[page],
+        embeds: [pages[page]],
     });
     for (const emoji of emojiList) await curPage.react(emoji);
-    const reactionCollector = curPage.createReactionCollector(
-        (reaction, user) =>
-            emojiList.includes(reaction.emoji.name) &&
-            !user.bot &&
-            user.id == msg.author.id,
-        { time: timeout }
-    );
+    const filter = (reaction, user) =>
+        emojiList.includes(reaction.emoji.name) &&
+        !user.bot &&
+        user.id == msg.author.id;
+    const reactionCollector = curPage.createReactionCollector({
+        filter: filter,
+        time: timeout,
+    });
     reactionCollector.on("collect", async (reaction) => {
-        msg.guild.me.hasPermission("MANAGE_MESSAGES")
+        msg.guild.me.permissions.has(Permissions.FLAGS.MANAGE_MESSAGES)
             ? reaction.users.remove(msg.author)
             : null;
         switch (reaction.emoji.name) {
@@ -53,13 +58,13 @@ const embedPagination = async (
             : null;
         !curPage.deleted
             ? curPage.edit({
-                  embed: pages[page],
+                  embeds: [pages[page]],
               })
             : null;
     });
     reactionCollector.on("end", () => {
         if (!curPage.deleted) {
-            msg.guild.me.hasPermission("MANAGE_MESSAGES")
+            msg.guild.me.permissions.has(Permissions.FLAGS.MANAGE_MESSAGES)
                 ? curPage.reactions.removeAll()
                 : null;
         }

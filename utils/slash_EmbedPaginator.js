@@ -11,7 +11,7 @@ const embedPagination = async (
         Permissions.FLAGS.MANAGE_MESSAGES
     )
         ? await interaction.channel.send(
-              "I don't have MANAGE_MESSAGE as a permission so I can't remove your reactions. If you want to have an easier time using these embeds, you might want to consider giving me the permission."
+              "I don't have MANAGE_MESSAGE as a permission so I can't remove your reactions. If you want to have an easier time using these embeds, you might want to consider giving me the MANAGE_MESSAGES as a permission."
           )
         : null;
     if (!interaction && !interaction.channel)

@@ -1,4 +1,4 @@
-# [Bläck Cät Discord Bot]()
+# [Bläck Cät Discord Bot](https://discord.com/oauth2/authorize?client_id=670266777015549980&scope=bot%20applications.commands&permissions=137686082%20&%20redirect_uri=https://www.blackcatbot.xyz/)
 
 > `Fun, Fast and Facile`
 
